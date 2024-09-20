@@ -75,7 +75,8 @@ def generate_payment_request(amount):
     data = {
         'merchant': f'{MERCHANT_KEY}',
         'amount': f'{amount}',
-        'payCurrency': 'USDT'
+        'payCurrency': 'USDT',
+        'currency': 'USDT'
     }
     response = requests.post(url, data=json.dumps(data))
     if response.status_code != 200:
@@ -92,7 +93,7 @@ def generate_payment_request(amount):
 
 
 # For paying funds to seller/buyer
-def create_payout(address, amount):
+def create_payout_to_seller(address, amount):
     url = "https://api.oxapay.com/api/send"
     data = {
         'key': f'{MERCHANT_KEY}',
@@ -101,12 +102,15 @@ def create_payout(address, amount):
         'currency': 'USDT'
     }
     response = requests.post(url, data=json.dumps(data))
-    data = response.json()
-    track_id = data['trackId']
-    status = data['status']
+
     if response.status_code != 200:
         return False
-    return status, track_id
+    if response.status_code == 200:
+        data = response.json()
+        track_id = data['trackId']
+        result = data['status']
+        status = data['result']
+        return status, track_id, result
 
 
 # For checking payout status
@@ -118,11 +122,13 @@ def check_payout_status(pay_id):
         'trackId': f'{pay_id}'
     }
     response = requests.post(url, data=json.dumps(data))
-    result = response.json()
-    status = result['status']
     if response.status_code != 200:
         return False
-    return status
+    if response.status_code == 200:
+        result = response.json()
+        status = result['result']
+        resp = result['status']
+        return status, resp
 
 
 # YA KUTAFUTA ZA KAHAWA

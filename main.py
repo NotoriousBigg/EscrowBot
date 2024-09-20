@@ -15,6 +15,11 @@ client = MongoClient(
 db = client.TGEscrow
 users = db.users
 trades = db.trades
+successful = db.successfultrades
+
+user_messages = {}
+
+forwarded_messages = {}
 
 
 # SOME FUNCS
@@ -81,6 +86,7 @@ def start_handler(message):
                     reply_markup=terms_regulations(),
                     parse_mode="Markdown"
                 )
+
     except telebot.apihelper.ApiTelegramException as e:
         bot.send_message(message.chat.id, f"Error Occurred: {e}")
 
@@ -128,7 +134,7 @@ def add_usdt_address(message):
         if valid:
             users.insert_one({
                 "_id": sender,
-                "address": address,
+                'address': address
             })
             bot.send_message(
                 message.chat.id,
@@ -159,20 +165,35 @@ def newt_rade(message):
                 f"again."
             )
         else:
-            code = generate_linking_code()
-            trades.insert_one({
-                "_id": code,
-                "partyone": sender
+            get_trade = trades.find_one({
+                "$or": [
+                    {"partyone": sender},
+                    {"partytwo": sender}
+                ]
             })
-            bot.send_message(
-                message.chat.id,
-                f"Hello {fname},\n"
-                f"Please use this link to initiate a new trade. Send it to the other partner to establish a "
-                f"connection.\n\n"
-                f"Trade Link: `https://t.me/{bot.get_me().username}?start=trade_{code}` (Click to Copy)\n"
-                f"Wishing you safe trading on Telegram!",
-                parse_mode="Markdown",
-            )
+            if get_trade:
+                active = get_trade.get('active',
+                                       False)
+                if active:
+                    bot.send_message(
+                        message.chat.id,
+                        "Sorry, You can have a single trade active at once."
+                    )
+                else:
+                    code = generate_linking_code()
+                    trades.insert_one({
+                        "_id": code,
+                        "partyone": sender
+                    })
+                    bot.send_message(
+                        message.chat.id,
+                        f"Hello {fname},\n"
+                        f"Please use this link to initiate a new trade. Send it to the other partner to establish a "
+                        f"connection.\n\n"
+                        f"Trade Link: `https://t.me/{bot.get_me().username}?start=trade_{code}` (Click to Copy)\n"
+                        f"Wishing you safe trading on Telegram!",
+                        parse_mode="Markdown",
+                    )
     except telebot.apihelper.ApiTelegramException as e:
         bot.send_message(message.chat.id, f"Error Occurred: {e}")
 
@@ -297,6 +318,8 @@ def request_payment(message):
                     )
                 else:
                     if message.from_user.id == partyone:
+                        trades.update_one({"partyone": partyone},
+                                          {"$set": {'amount': amount}})
                         bot.send_photo(
                             partytwo,
                             photo=qrcode,
@@ -319,6 +342,8 @@ def request_payment(message):
                             reply_markup=check_deposit_status(track_id)
                         )
                     elif message.from_user.id == partytwo:
+                        trades.update_one({"partytwo": partytwo},
+                                          {"$set": {'amount': amount}})
                         bot.send_photo(
                             partyone,
                             photo=qrcode,
@@ -361,6 +386,10 @@ def check_payment_statuses(message, track_id):
         )
 
 
+def send_report(message):
+    pass
+
+
 @bot.callback_query_handler(func=lambda call: True)
 def callback_handler(call):
     if call.data == "tnc":
@@ -373,12 +402,12 @@ def callback_handler(call):
     elif call.data == "accept":
         bot.send_message(
             call.message.chat.id,
-            "Thanks for accepting to the TOS"
+            "Thanks for accepting to the TOS. To proceed, Send the /register command."
         )
     elif call.data == "reject":
         bot.send_message(
             call.message.chat.id,
-            "Thanks for rejecting to the TOS"
+            "Sorry to see that you cannot compile to our Terms and Conditions.Please block this bot"
         )
     elif call.data.startswith("status_"):
         try:
@@ -408,12 +437,12 @@ def callback_handler(call):
                 elif resp == "Paid":
                     bot.send_message(
                         call.message.chat.id,
-                        f"The payment has been.We will release it to the seller once you confirm that they "
-                        f"have delivered their part.\n Current Response: {resp}. \n\n"
-                        f"To the seller: You can now deliver your good/service to the buyer.\n"
-                        f"The buyer should also confirm if the good/service is what he/she ordered for.If consent,"
-                        f"send /release.\n\n"
-                        f"Seller can also send the /release command and wait for the buyer to confirm."
+                        f"The payment has been processed. The funds will be released to the seller upon your "
+                        f"confirmation of delivery. Current Response: {resp}.\n\n"
+                        f"To the seller: You can now deliver the goods/services to the buyer. The buyer should verify "
+                        f"the received items. If satisfied, please send /release.\n\n"
+                        f"The seller can also initiate the /release command and await the buyer's confirmation.",
+                        reply_markup=finalize_trade()
                     )
 
         except telebot.apihelper.ApiTelegramException as e:
@@ -421,6 +450,223 @@ def callback_handler(call):
                 call.message.chat.id,
                 "Error Occurred: {e}."
             )
+    elif call.data == "report":
+        bot.send_message(
+            call.message.chat.id,
+            "Please send us your complains.(It can be either photo or text We will take an action as soon as possible."
+        )
+        bot.register_next_step_handler(call.message, send_report)
+    elif call.data == 'finalize':
+        sender = call.message.from_user.id
+        fname = call.message.from_user.first_name
+        try:
+            get_trade_id = trades.find_one({
+                "$or": [
+                    {"partyone": sender},
+                    {"partytwo": sender}
+                ]
+            })
+            if get_trade_id:
+                trade_id = get_trade_id.get("_id")
+                partyone = get_trade_id.get("partyone")
+                partytwo = get_trade_id.get("partytwo")
+                amount = get_trade_id.get("amount")
+                party_one = users.find_one({'_id': partyone})
+                party_two = users.find_one({'_id': partytwo})
+                pone_address = party_one.get("address")
+                ptwo_address = party_two.get("address")
+                try:
+                    if sender == partyone:
+                        status, track_id, result = create_payout_to_seller(ptwo_address, amount)
+                        if status != 100:
+                            bot.send_message(
+                                call.message.chat.id,
+                                f"Some error occurred.\n Current Response: {result}\nPlease forward this message to"
+                                f"the support."
+                            )
+                        elif status == 100:
+                            if status != 100:
+                                bot.send_message(
+                                    call.message.chat.id,
+                                    f"Payment has been Initiated.Check status by clicking below button.\n Current "
+                                    f"Response: {result}\n",
+                                    reply_markup=check_pay_status(track_id)
+                                )
+
+                    if sender == partytwo:
+                        status, track_id, result = create_payout_to_seller(pone_address, amount)
+                        if status != 100:
+                            bot.send_message(
+                                call.message.chat.id,
+                                f"Some error occurred during initiation of the payment.\n Current Response: {result}\n"
+                                f"Please forward this message to"
+                                f"the support."
+                            )
+                        elif status == 100:
+                            if status != 100:
+                                bot.send_message(
+                                    call.message.chat.id,
+                                    f"Payment has been Initiated.Check status by clicking below button.\n Current "
+                                    f"Response: {result}\n",
+                                    reply_markup=check_pay_status(track_id)
+                                )
+                except telebot.apihelper.ApiTelegramException as e:
+                    bot.send_message(
+                        call.message.chat.id,
+                        f"Error Occurred: {e}."
+                    )
+
+        except Exception as e:
+            bot.send_message(
+                call.message.chat.id,
+                f"Error Occurred: {e}."
+            )
+    elif call.data.startswith('pstatus_'):
+        sender = call.message.from_user.id
+        get_trade_id = trades.find_one({
+            "$or": [
+                {"partyone": sender},
+                {"partytwo": sender}
+            ]
+        })
+        if get_trade_id:
+            trade_id = get_trade_id.get("_id")
+            partyone = get_trade_id.get("partyone")
+            partytwo = get_trade_id.get("partytwo")
+            amount = get_trade_id.get("amount")
+            party_one = users.find_one({'_id': partyone})
+            party_two = users.find_one({'_id': partytwo})
+            pone_address = party_one.get("address")
+            ptwo_address = party_two.get("address")
+            try:
+                trackid = call.data.split("_")[1]
+                status, result = check_pay_status(trackid)
+                if sender == partyone:
+                    status, track_id, result = create_payout_to_seller(ptwo_address, amount)
+                    if status != 100:
+                        bot.send_message(
+                            call.message.chat.id,
+                            f"Some error occurred.\n Current Response: {result}\nPlease forward this message to"
+                            f"the support."
+                        )
+                    elif status == 100:
+                        if result == "Processing":
+                            bot.send_message(
+                                call.message.chat.id,
+                                f"Please be patient as we process your payment.\n Current Response: {result}"
+                            )
+                        elif result == "Confirming":
+                            bot.send_message(
+                                call.message.chat.id,
+                                "Your payment has been sent and is awaiting blockchain confirmation. Please be patient.\n"
+                                f"Current Response: {result}"
+                            )
+                        elif result == "Complete":
+                            trades.update_one({"partyone": partyone},
+                                              {"$set": {'active': False}})
+                            bot.send_message(
+                                call.message.chat.id,
+                                "Please check your wallet to confirm your payment.\n"
+                                f"Current Response: {result}. If not yet, Please wait and keep checking.\n"
+                                f"You can contact support if no payment is received after 30 minutes"
+                            )
+                            mess = f"""
+***New Trade Finalized.***
+
+***Status:*** _{result}_
+***Trade ID:*** _{trade_id}_
+***Party One:*** _{party_one}_
+***Party Two:*** _{party_two}_
+***Amount:*** _{amount}_
+***P.O Address:*** _{pone_address}_
+***P.T Address:*** _{ptwo_address}_
+"""
+                            bot.send_message(
+                                LOGS_CHANNEL,
+                                mess,
+                                parse_mode="Markdown",
+                            )
+                elif sender == party_two:
+                    status, track_id, result = create_payout_to_seller(pone_address, amount)
+                    if status != 100:
+                        bot.send_message(
+                            call.message.chat.id,
+                            f"Some error occurred.\n Current Response: {result}\nPlease forward this message to"
+                            f"the support."
+                        )
+                    elif status == 100:
+                        if result == "Processing":
+                            bot.send_message(
+                                call.message.chat.id,
+                                f"Please be patient as we process your payment.\n Current Response: {result}"
+                            )
+                        elif result == "Confirming":
+                            bot.send_message(
+                                call.message.chat.id,
+                                "Your payment has been sent and is awaiting blockchain confirmation. Please be patient.\n"
+                                f"Current Response: {result}"
+                            )
+                        elif result == "Complete":
+                            trades.update_one({"partytwo": partytwo},
+                                              {"$set": {'active': False}})
+                            bot.send_message(
+                                call.message.chat.id,
+                                "Please check your wallet to confirm your payment.\n"
+                                f"Current Response: {result}. If not yet, Please wait and keep checking.\n"
+                                f"You can contact support if no payment is received after 30 minutes"
+                            )
+                            mess = f"""
+***New Trade Finalized.***
+
+***Status:*** _{result}_
+***Trade ID:*** _{trade_id}_
+***Party One:*** _{party_one}_
+***Party Two:*** _{party_two}_
+***Amount:*** _{amount}_
+***P.O Address:*** _{pone_address}_
+***P.T Address:*** _{ptwo_address}_
+"""
+                            bot.send_message(
+                                LOGS_CHANNEL,
+                                mess,
+                                parse_mode="Markdown",
+                            )
+            except Exception as e:
+                bot.send_message(
+                    call.message.chat.id,
+                    f"Error: {e}"
+                )
+
+
+@bot.message_handler(func=lambda message: message.chat.type == 'private',
+                     content_types=['text', 'photo', 'audio', 'document', 'video', 'voice', 'video_note', 'sticker',
+                                    'location', 'contact'])
+def handle_all_messages(message):
+    if message.chat.id in ADMINS_ID:
+        # Handle admin's reply
+        if message.reply_to_message and message.reply_to_message.message_id in forwarded_messages:
+            original_message_id = forwarded_messages[message.reply_to_message.message_id]
+            original_user_id = user_messages[original_message_id]['chat_id']
+            # Forward the appropriate content type back to the user
+            if message.content_type == 'text':
+                bot.send_message(original_user_id, message.text)
+            else:
+                bot.copy_message(original_user_id, message.chat.id, message.message_id)
+            print(f"Admin {message.chat.id} replied to user {original_user_id}")
+        else:
+            bot.reply_to(message, "Please reply to a forwarded user message.")
+    else:
+        original_message_id = message.message_id
+        user_messages[original_message_id] = {
+            'chat_id': message.chat.id,
+            'content_type': message.content_type,
+            'user_id': message.from_user.id
+        }
+        for admin in ADMINS_ID:
+            forwarded_message = bot.forward_message(admin, message.chat.id, original_message_id)
+            forwarded_messages[forwarded_message.message_id] = original_message_id
+        # bot.reply_to(message, "Your message has been forwarded to an admin. Please wait for a response.")
+        print(f"User {message.chat.id} message forwarded to admin(s)")
 
 
 if __name__ == '__main__':
