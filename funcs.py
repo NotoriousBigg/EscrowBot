@@ -75,8 +75,9 @@ def generate_payment_request(amount):
     data = {
         'merchant': f'{MERCHANT_KEY}',
         'amount': f'{amount}',
-        'payCurrency': 'USDT',
-        'currency': 'USDT'
+        'payCurrency': 'USD',
+        'currency': 'USDT',
+        'network': 'TRC20'
     }
     response = requests.post(url, data=json.dumps(data))
     if response.status_code != 200:
