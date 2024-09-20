@@ -139,7 +139,8 @@ def add_usdt_address(message):
             bot.send_message(
                 message.chat.id,
                 f"Hello {fname}, \n"
-                f"Address: {address} has been added to your account. You are now set to start your selling and buying."
+                f"Address: {address} has been added to your account. You are now set to start your selling and buying.\n"
+                f"Initiate a new trade with /newtrade"
             )
         else:
             bot.send_message(
