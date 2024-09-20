@@ -1,5 +1,5 @@
 BOT_TOKEN = '7926296221:AAEwO0NEIeyapydh6qNMAWt_EVIst25BbSo'
-MUST_JOIN = ["@InfinityTechHub"]
+MUST_JOIN = ["@InfinityTechHub", "@AutoEscrowServices"]
 LOGS_CHANNEL = -1002494902421
 ADMINS_ID = [7280871776]
 
