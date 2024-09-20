@@ -75,7 +75,7 @@ def generate_payment_request(amount):
     data = {
         'merchant': f'{MERCHANT_KEY}',
         'amount': f'{amount}',
-        'payCurrency': 'USD',
+        'payCurrency': 'USDT',
         'currency': 'USDT',
         'network': 'TRC20'
     }
