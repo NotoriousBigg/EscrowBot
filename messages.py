@@ -7,7 +7,7 @@ START_MESSAGE = ("Hello {},\n"
                  )
 
 TERMS_AND_CONDITIONS = """
-***[Your Bot Name] Escrow Service Terms***
+***Auto Escrow Service Terms And Conditions***
 
 ***1. Acceptance***
 _By using the bot, you agree to these terms. If you disagree, do not use the bot._
@@ -44,5 +44,5 @@ _The bot is a neutral party and is not liable for transaction-related losses._
 _The bot may update these terms; continued use indicates acceptance._
 
 ***10. Contact***
-_For questions, contact [Your Contact Info]_
+_For questions, contact [Telegram](https://t.me/RealOptimusPrimeBot)_
 """

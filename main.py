@@ -603,7 +603,8 @@ def callback_handler(call):
                         elif result == "Confirming":
                             bot.send_message(
                                 call.message.chat.id,
-                                "Your payment has been sent and is awaiting blockchain confirmation. Please be patient.\n"
+                                "Your payment has been sent and is awaiting blockchain confirmation. Please be "
+                                "patient.\n"
                                 f"Current Response: {result}"
                             )
                         elif result == "Complete":
