@@ -1,12 +1,14 @@
 import time
 
 import telebot
-
+import logging
 from config import *
 from funcs import *
 from buttons import *
 from messages import *
 from pymongo import MongoClient
+
+logging.basicConfig(level=logging.DEBUG)
 
 bot = telebot.TeleBot(BOT_TOKEN)
 client = MongoClient(
@@ -20,6 +22,8 @@ successful = db.successfultrades
 user_messages = {}
 
 forwarded_messages = {}
+
+logging.basicConfig(level=logging.INFO)
 
 
 # SOME FUNCS
@@ -155,48 +159,59 @@ def newt_rade(message):
     sender = message.from_user.id
     fname = message.from_user.first_name
     try:
+        # Check if the user is in the required channels
         check_results = check_user_in_channels(sender, MUST_JOIN)
         not_in_channels = [channel for channel, status in check_results.items() if status != 'Present']
 
         if not_in_channels:
+            # Notify user of missing channels and exit
             missing_channels = ', '.join(not_in_channels)
             bot.send_message(
                 message.chat.id,
-                f"To use this bot, you need to join the following channels:\n{missing_channels}\nPlease join and try "
-                f"again."
+                f"To use this bot, you need to join the following channels:\n{missing_channels}\nPlease join and try again."
             )
-        else:
-            get_trade = trades.find_one({
-                "$or": [
-                    {"partyone": sender},
-                    {"partytwo": sender}
-                ]
-            })
-            if get_trade:
-                active = get_trade.get('active',
-                                       False)
-                if active:
-                    bot.send_message(
-                        message.chat.id,
-                        "Sorry, You can have a single trade active at once."
-                    )
-                else:
-                    code = generate_linking_code()
-                    trades.insert_one({
-                        "_id": code,
-                        "partyone": sender
-                    })
-                    bot.send_message(
-                        message.chat.id,
-                        f"Hello {fname},\n"
-                        f"Please use this link to initiate a new trade. Send it to the other partner to establish a "
-                        f"connection.\n\n"
-                        f"Trade Link: `https://t.me/{bot.get_me().username}?start=trade_{code}` (Click to Copy)\n"
-                        f"Wishing you safe trading on Telegram!",
-                        parse_mode="Markdown",
-                    )
+            return  # Exit after notifying about missing channels
+
+        # Check if the user already has an active trade
+        get_trade = trades.find_one({
+            "$or": [
+                {"partyone": sender},
+                {"partytwo": sender}
+            ]
+        })
+
+        if get_trade:
+            # Check if the trade is active
+            active = get_trade.get('active', False)
+            if active:
+                bot.send_message(
+                    message.chat.id,
+                    "Sorry, You can have a single trade active at once."
+                )
+                return  # Exit since the trade is active
+
+        # Create a new trade if no active trade exists
+        code = generate_linking_code()  # Ensure this function generates unique codes
+        trades.insert_one({
+            "_id": code,
+            "partyone": sender,
+            "active": True  # Optional: Set as active if your logic requires it
+        })
+        bot.send_message(
+            message.chat.id,
+            f"Hello {fname},\n"
+            f"Please use this link to initiate a new trade. Send it to the other partner to establish a connection.\n\n"
+            f"Trade Link: `https://t.me/{bot.get_me().username}?start=trade_{code}` (Click to Copy)\n"
+            f"Wishing you safe trading on Telegram!",
+            parse_mode="Markdown"
+        )
+
     except telebot.apihelper.ApiTelegramException as e:
         bot.send_message(message.chat.id, f"Error Occurred: {e}")
+
+    except Exception as e:
+        # Catch other potential exceptions, such as database errors
+        bot.send_message(message.chat.id, f"An unexpected error occurred: {e}")
 
 
 def start_new_trade_func(message, trade_id):
