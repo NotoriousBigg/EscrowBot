@@ -44,5 +44,18 @@ _The bot is a neutral party and is not liable for transaction-related losses._
 _The bot may update these terms; continued use indicates acceptance._
 
 ***10. Contact***
-_For questions, contact [Telegram](https://t.me/RealOptimusPrimeBot)_
+For questions, contact [Telegram](https://t.me/RealOptimusPrimeBot)
+"""
+
+GET_CRYPTO = """
+DONT HAVE CRYPTO???
+
+No need to worry. Register on any of this platforms to start trading crypto 
+
+1. OxaPay:
+Free transactions on this bot. Register now: https://www.shrx.pw/bRShx
+2. BitGet:
+Register now: https://www.shrx.pw/bRShx
+3. Binance: 
+Register now: https://www.shrx.pw/bRShx
 """
