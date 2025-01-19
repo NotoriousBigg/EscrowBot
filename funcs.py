@@ -24,7 +24,8 @@ def create_random_address():
     url = "https://api.oxapay.com/merchants/request/staticaddress"
     data = {
         'merchant': f'{MERCHANT_KEY}',
-        'currency': 'LTC'
+        'currency': 'LTC',
+        'network': 'bep20'
     }
     r = requests.post(url, data=json.dumps(data))
     data = r.json()
@@ -97,7 +98,8 @@ def create_payout_to_seller(address, amount):
         'key': f'{MERCHANT_KEY}',
         'address': f'{address}',
         'amount': f'{amount}',
-        'currency': 'LTC'
+        'currency': 'LTC',
+        'network': 'bep20'
     }
     response = requests.post(url, data=json.dumps(data))
 
