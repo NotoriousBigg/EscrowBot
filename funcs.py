@@ -24,7 +24,8 @@ def create_random_address():
     url = "https://api.oxapay.com/merchants/request/staticaddress"
     data = {
         'merchant': f'{MERCHANT_KEY}',
-        'currency': 'LTC',
+        'currency': 'USDT',
+        'network': 'BEP20'
     }
     r = requests.post(url, data=json.dumps(data))
     data = r.json()
@@ -73,8 +74,10 @@ def generate_payment_request(amount):
     data = {
         'merchant': f'{MERCHANT_KEY}',
         'amount': f'{amount}',
-        'payCurrency': 'LTC',
-        'currency': 'LTC'
+        'payCurrency': 'USDT',
+        'currency': 'USDT',
+        'network': 'BEP20'
+
     }
     response = requests.post(url, data=json.dumps(data))
     if response.status_code != 200:
@@ -97,7 +100,8 @@ def create_payout_to_seller(address, amount):
         'key': f'{MERCHANT_KEY}',
         'address': f'{address}',
         'amount': f'{amount}',
-        'currency': 'LTC',
+        'currency': 'USDT',
+        'network': 'BEP20'
     }
     response = requests.post(url, data=json.dumps(data))
 
@@ -116,7 +120,7 @@ def create_payout_to_seller(address, amount):
 def check_payout_status(pay_id):
     url = 'https://api.oxapay.com/api/inquiry'
     data = {
-        'key': 'YOUR_PAYOUT_API_KEY',
+        'key': f'{MERCHANT_KEY}',
         'trackId': f'{pay_id}'
     }
     response = requests.post(url, data=json.dumps(data))
@@ -129,7 +133,6 @@ def check_payout_status(pay_id):
         return status, resp
 
 
-# YA KUTAFUTA ZA KAHAWA
 def calculate_total_deposit(amount):
     total_fee_percentage = 0.006  # 0.6%
     total_deposit = float(amount) / (1 - total_fee_percentage)

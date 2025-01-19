@@ -639,13 +639,13 @@ def callback_handler(call):
                             mess = f"""
 ***New Trade Finalized.***
 
-***Status:*** _{result}_
-***Trade ID:*** _{trade_id}_
-***Party One:*** _{party_one}_
-***Party Two:*** _{party_two}_
-***Amount:*** _{amount}_
-***P.O Address:*** _{pone_address}_
-***P.T Address:*** _{ptwo_address}_
+***Status:*** ___{result}___
+***Trade ID:*** ___{trade_id}___
+***Party One:*** ___{party_one}___
+***Party Two:*** ___{party_two}___
+***Amount:*** ___{amount}___
+***P.O Address:*** ___{pone_address}___
+***P.T Address:*** ___{ptwo_address}___
 """
                             bot.send_message(
                                 LOGS_CHANNEL,
