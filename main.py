@@ -8,8 +8,6 @@ from buttons import *
 from messages import *
 from pymongo import MongoClient
 
-logging.basicConfig(level=logging.DEBUG)
-
 bot = telebot.TeleBot(BOT_TOKEN)
 client = MongoClient(
     "mongodb+srv://usanumberplug:UAc1XOXdG16HHE2M@infinityshop.dqobe8l.mongodb.net/?retryWrites=true&w=majority"
@@ -317,7 +315,7 @@ def request_payment(message):
     sender = message.from_user.id
     fname = message.from_user.first_name
     amount = message.text.strip()
-    if not amount.isdigit():
+    if not float(amount):
         bot.reply_to(message, "Please enter a valid amount.")
     else:
         new_amount = calculate_total_deposit(amount)
