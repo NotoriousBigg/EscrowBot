@@ -115,8 +115,8 @@ def registration(message):
                 message.chat.id,
                 f"Hello {fname},\n"
                 f"To register, simply send us your wallet address where you will receive your funds. "
-                f"We recommend verified wallets like Binance or the built-in Telegram wallet.\n\n"
-                f"To proceed, please send your USDT TRC-20 wallet address. Additional coins will be supported in the "
+                f"We recommend verified wallets like Binance, OKX or Bitget.\n\n"
+                f"To proceed, please send your LiteCoin[LTC] wallet address. Additional coins will be supported in the "
                 f"future."
             )
             bot.register_next_step_handler(message, add_usdt_address)
@@ -154,7 +154,7 @@ def add_usdt_address(message):
         else:
             bot.send_message(
                 message.chat.id,
-                f"Please provide a valid USDT TRC20 Address."
+                f"Please provide a valid LTC Address."
             )
 
 
@@ -173,7 +173,8 @@ def newt_rade(message):
             missing_channels = ', '.join(not_in_channels)
             bot.send_message(
                 message.chat.id,
-                f"To use this bot, you need to join the following channels:\n{missing_channels}\nPlease join and try again."
+                f"To use this bot, you need to join the following channels:\n{missing_channels}\n"
+                f"Please join and try again."
             )
             return  # Exit after notifying about missing channels
 
