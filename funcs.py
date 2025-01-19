@@ -132,5 +132,5 @@ def check_payout_status(pay_id):
 # YA KUTAFUTA ZA KAHAWA
 def calculate_total_deposit(amount):
     total_fee_percentage = 0.006  # 0.6%
-    total_deposit = int(amount) / (1 - total_fee_percentage)
+    total_deposit = float(amount) / (1 - total_fee_percentage)
     return round(total_deposit, 2)

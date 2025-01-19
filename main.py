@@ -318,7 +318,7 @@ def request_payment(message):
     if not float(amount):
         bot.reply_to(message, "Please enter a valid amount.")
     else:
-        new_amount = calculate_total_deposit(amount)
+        # new_amount = calculate_total_deposit(amount)
 
         trade = trades.find_one({
             "$or": [
@@ -330,7 +330,7 @@ def request_payment(message):
         partytwo = trade.get('partytwo')
         if trade:
             try:
-                status, address, qrcode, track_id = generate_payment_request(new_amount)
+                status, address, qrcode, track_id = generate_payment_request(amount)
                 if status != 100:
                     bot.send_message(
                         message.chat.id,
