@@ -8,12 +8,10 @@ from config import MERCHANT_KEY
 
 # Func To verify USDT Address
 def verify_address(address):
-    if len(address) != 34 or not address.startswith('T'):
-        return False
-    base58_regex = re.compile(r'^[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]+$')
-    if not base58_regex.match(address):
-        return False
-    return True
+    if isinstance(address, str):
+        pattern = r"^0x[a-fA-F0-9]{40}$"
+        return bool(re.match(pattern, address))
+    return False
 
 
 # to generate code for deep linking of the bot
